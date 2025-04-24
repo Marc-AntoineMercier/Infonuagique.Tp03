@@ -1,31 +1,45 @@
 services:
+  # Nom du service
   portainer:
+    # lien vers l'image docker hub
     image: portainer/portainer-ce:alpine
+    # Nom du container pour docker
     container_name: portainer
+    # Définie restart a quel moment: redémarre automatiquement tant que nous stoppont pas le container
     restart: unless-stopped
+    # Définie le réseau utiliser pour le container
     networks:
         - cloud
+    # Définie l'exposition des ports réseaux du container
     ports:
      - 9000:9000
+    # Définie le volume utiliser dans le container
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      # Volume définie dans la section volumes
       - portainer_data:/data
+    # Définie le label que le service Traefik va utiliser pour faire le reverse proxy dans le réseau docker
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.portainer.rule=Host(`portainer.${MY_DOMAIN}`)'
       - 'traefik.http.routers.portainer.entryPoints=websecure'
-      - "traefik.http.services.frontend.loadbalancer.server.port=9000"
-      - "traefik.http.routers.frontend.service=frontend"
- 
+  # Nom du service
   nextclouddb:
+    # lien vers l'image docker hub
     image: mariadb
+    # Nom du container pour docker
     container_name: nextcloud-db
+    # Définie restart a quel moment: redémarre automatiquement tant que nous stoppont pas le container
     restart: unless-stopped
+    # 
     command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    # Définie le réseau utiliser pour le container
     networks:
       - cloud
+    # Définie le volume utiliser dans le container
     volumes:
       - nextclouddb:/var/lib/mysql
+    # Définie les variable d'environement que mariadb a bessoin pour faire fonctionner le service
     environment:
       - PUID=1000
       - PGID=1000
@@ -34,22 +48,30 @@ services:
       - MYSQL_PASSWORD=${DB_PASSWORD}
       - MYSQL_DATABASE=${DB_DATABASE}
       - MYSQL_USER=${DB_USER}
- 
+  # Nom du service
   nextcloud:
+    # Images sur docker hub
     image: nextcloud
+    # Définie le nom du container pour docker
     container_name: nextcloud
+    # Définie restart a quel moment: redémarre automatiquement tant que nous stoppont pas le container
     restart: unless-stopped
+    # Définie le réseau utiliser pour le container
     networks:
       - cloud
+    # Définie le moment quand t'il va partir, il va partir seulement quand la base de donné nextcloud db seras partie
     depends_on:
       - nextclouddb
+    # Définie l'exposition des ports réseaux du container
     ports:
       - 8081:80
+    # Définie le volume utiliser dans le container
     volumes:
       - /html:/var/www/html
       - /custom_apps:/var/www/html/custom_apps
       - /config:/var/www/html/config
       - /data:/var/www/html/data
+    # Définie les variable d'environement que mariadb a bessoin pour faire fonctionner le service
     environment:
       - PUID=1000 
       - PGID=1000 
@@ -57,6 +79,7 @@ services:
       - MYSQL_PASSWORD=${DB_PASSWORD}
       - MYSQL_DATABASE=${DB_DATABASE}
       - MYSQL_USER=${DB_USER}
+    # Définie le label que le service Traefik va utiliser pour faire le reverse proxy dans le réseau docker
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.nextcloud.rule=Host(`nextcloud.${MY_DOMAIN}`)'
@@ -118,8 +141,10 @@ services:
       - "80:80"
     environment:
       - "DUCKDNS_TOKEN=${DUCKDNS_TOKEN}"
+    
   backend:
     image: marcantoinemercier/tp02-trackb_backend:v1
+    container_name: backend_trackb
     build:
       context: ./backend
     ports:
@@ -133,18 +158,19 @@ services:
 
   frontend:
     image: marcantoinemercier/tp02-trackb_frontend:v1
+    container_name: frontend_trackb
     build:
       context: ./frontend
     ports:
       - "9191:80"
-    depends_on:
+    depends_on: 
       - backend
     networks:
       - cloud
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`frontend.${MY_DOMAIN}`)"
-      - "traefik.http.routers.frontend.entryPoints=websecure"
+      - "traefik.http.routers.frontendtrack.rule=Host(`frontendtrack.${MY_DOMAIN}`)"
+      - "traefik.http.routers.frontendtrack.entryPoints=websecure"
  
 volumes:
     portainer_data:
