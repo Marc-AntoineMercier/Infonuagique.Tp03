@@ -46,11 +46,10 @@ services:
     ports:
       - 8081:80
     volumes:
-      # - ./html:/var/www/html
-      # - ./custom_apps:/var/www/html/custom_apps
-      # - ./config:/var/www/html/config
-      # - ./data:/var/www/html/data
-        - /local/nextcloud:/var/www/html
+      - /html:/var/www/html
+      - /custom_apps:/var/www/html/custom_apps
+      - /config:/var/www/html/config
+      - /data:/var/www/html/data
     environment:
       - PUID=1000 
       - PGID=1000 
@@ -115,14 +114,16 @@ services:
       - 'traefik.http.routers.api.entryPoints=websecure'
       - 'traefik.http.routers.api.service=api@internal'
     ports:
-      - "443:443"
-      - "80:80"
+      - "4435:443"
+      - "8080:80"
     environment:
       - "DUCKDNS_TOKEN=${DUCKDNS_TOKEN}"
   backend:
     image: marcantoinemercier/tp02-trackb_backend:v1
     build:
       context: ./backend
+    ports:
+      - 9090:9090
     networks:
       - cloud
     labels:
@@ -134,6 +135,8 @@ services:
     image: marcantoinemercier/tp02-trackb_frontend:v1
     build:
       context: ./frontend
+    ports:
+      - "9191:80"
     depends_on:
       - backend
     networks:
