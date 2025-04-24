@@ -119,6 +119,34 @@ services:
       - "80:80"
     environment:
       - "DUCKDNS_TOKEN=${DUCKDNS_TOKEN}"
+
+  backend:
+    image: marcantoinemercier/tp02-trackb_backend:v1
+    build:
+      context: ./backend
+    ports:
+      - "9090:9090"
+    networks:
+       - my-network
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.jellyfin.rule=Host(`backend.${MY_DOMAIN}`)'
+      - 'traefik.http.routers.jellyfin.entryPoints=websecure'
+  
+  frontend:
+    image: marcantoinemercier/tp02-trackb_frontend:v1
+    build:
+      context: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - my-network
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.jellyfin.rule=Host(`frontend.${MY_DOMAIN}`)'
+      - 'traefik.http.routers.jellyfin.entryPoints=websecure'
  
  
 volumes:
@@ -127,5 +155,7 @@ volumes:
     jellyfin_data:
  
 networks:
-    cloud:
-        driver: bridge
+  my-network:
+    driver: bridge
+  cloud:
+    driver: bridge
