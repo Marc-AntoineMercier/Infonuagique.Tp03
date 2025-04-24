@@ -114,8 +114,8 @@ services:
       - 'traefik.http.routers.api.entryPoints=websecure'
       - 'traefik.http.routers.api.service=api@internal'
     ports:
-      - "4435:443"
-      - "8080:80"
+      - "443:443"
+      - "80:80"
     environment:
       - "DUCKDNS_TOKEN=${DUCKDNS_TOKEN}"
   backend:
