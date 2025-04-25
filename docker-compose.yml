@@ -1,27 +1,40 @@
+# Définit les conteneurs à déployer
 services:
+
+  # Interface web de gestion Docker
   portainer:
+    # Image Docker à utiliser
     image: portainer/portainer-ce:alpine
+    # Nom personnalisé du conteneur
     container_name: portainer
+    # Redémarre sauf si arrêté manuellement
     restart: unless-stopped
+    # Réseau(s) auquel le conteneur appartient
     networks:
       - cloud
+    # Redirige les ports hôte vers le conteneur
     ports:
       - 9000:9000
+    # Monte des répertoires ou fichiers dans le conteneur
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
+    # Ajoute des métadonnées, souvent pour Traefik
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.portainer.rule=Host(`portainer.${MY_DOMAIN}`)'
       - 'traefik.http.routers.portainer.entryPoints=websecure'
       - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+    # Définit des variables d’environnement
     environment:
       - TZ=America/Montreal
 
+  # Base de données pour Nextcloud
   nextclouddb:
     image: mariadb
     container_name: nextcloud-db
     restart: unless-stopped
+    # Commandes spécifiques au démarrage
     command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
     networks:
       - cloud
@@ -36,12 +49,14 @@ services:
       - MYSQL_DATABASE=${DB_DATABASE}
       - MYSQL_USER=${DB_USER}
 
+  # Application Nextcloud (cloud personnel)
   nextcloud:
     image: nextcloud
     container_name: nextcloud
     restart: unless-stopped
     networks:
       - cloud
+    # Démarre après la base de données
     depends_on:
       - nextclouddb
     ports:
@@ -60,6 +75,7 @@ services:
       - 'traefik.http.routers.nextcloud.rule=Host(`nextcloud.${MY_DOMAIN}`)'
       - 'traefik.http.routers.nextcloud.entryPoints=websecure'
 
+  # Serveur multimédia Jellyfin
   jellyfin:
     image: jellyfin/jellyfin:latest
     container_name: jellyfin
@@ -79,12 +95,14 @@ services:
       - 'traefik.http.routers.jellyfin.rule=Host(`jellyfin.${MY_DOMAIN}`)'
       - 'traefik.http.routers.jellyfin.entryPoints=websecure'
 
+  # Reverse proxy Traefik
   proxy:
     image: traefik
     container_name: traefik
     restart: unless-stopped
     networks:
       - cloud
+    # Options de configuration en ligne de commande
     command:
       - "--log.level=DEBUG"
       - "--api.insecure=true"
@@ -118,9 +136,11 @@ services:
     environment:
       - "DUCKDNS_TOKEN=${DUCKDNS_TOKEN}"
 
+  # Backend personnalisé de l'application TrackB
   backend:
     image: marcantoinemercier/tp02-trackb_backend:v1
     container_name: backend_trackb
+    # Indique où construire l'image
     build:
       context: ./backend
     ports:
@@ -132,6 +152,7 @@ services:
       - "traefik.http.routers.backend.rule=Host(`backend.${MY_DOMAIN}`)"
       - "traefik.http.routers.backend.entryPoints=websecure"
 
+  # Frontend personnalisé de l'application TrackB
   frontend:
     image: marcantoinemercier/tp02-trackb_frontend:v1
     container_name: frontend_trackb
@@ -148,11 +169,14 @@ services:
       - "traefik.http.routers.frontendtrack.rule=Host(`frontendtrack.${MY_DOMAIN}`)"
       - "traefik.http.routers.frontendtrack.entryPoints=websecure"
 
+# Définit les volumes Docker persistants
 volumes:
   portainer_data:
   nextclouddb:
   jellyfin_data:
 
+# Définit les réseaux Docker
 networks:
   cloud:
+    # Utilise le réseau bridge (par défaut)
     driver: bridge
